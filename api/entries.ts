@@ -1,6 +1,3 @@
-import { entries } from "../src/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 
 export default async function handler(req: any, res: any): Promise<void> {
@@ -9,10 +6,14 @@ export default async function handler(req: any, res: any): Promise<void> {
       res.status(500).json({ error: "DATABASE_URL non impostata sul server" });
       return;
     }
-    const db = drizzle(neon(process.env.DATABASE_URL));
+    const sql = neon(process.env.DATABASE_URL);
 
     if (req.method === "GET") {
-      const rows = await db.select().from(entries).orderBy(desc(entries.entryDate), desc(entries.id));
+      const rows = await sql`
+        SELECT id, entry_date AS "entryDate", content, created_at AS "createdAt"
+        FROM entries
+        ORDER BY entry_date DESC, id DESC
+      `;
       res.status(200).json(rows);
       return;
     }
@@ -24,10 +25,11 @@ export default async function handler(req: any, res: any): Promise<void> {
         res.status(400).json({ error: "entryDate e content sono obbligatori" });
         return;
       }
-      const [row] = await db
-        .insert(entries)
-        .values({ entryDate, content: String(content).trim() })
-        .returning();
+      const [row] = await sql`
+        INSERT INTO entries (entry_date, content)
+        VALUES (${entryDate}, ${String(content).trim()})
+        RETURNING id, entry_date AS "entryDate", content, created_at AS "createdAt"
+      `;
       res.status(201).json(row);
       return;
     }
@@ -38,7 +40,7 @@ export default async function handler(req: any, res: any): Promise<void> {
         res.status(400).json({ error: "id mancante" });
         return;
       }
-      await db.delete(entries).where(eq(entries.id, id));
+      await sql`DELETE FROM entries WHERE id = ${id}`;
       res.status(200).json({ ok: true });
       return;
     }
