@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diario Giornaliero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night: #1F1B17;
+    --night-2: #26211C;
+    --paper: #F3E9D6;
+    --paper-line: #E3D3B4;
+    --ink: #33281C;
+    --ink-soft: #6B5A45;
+    --thread: #8A3B3B;
+    --thread-soft: #B96B60;
+    --gold: #C9A24B;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; min-height:100vh;
+    background: var(--night);
+    background-image: radial-gradient(circle at 50% 0%, var(--night-2), var(--night) 70%);
+    font-family: 'Source Sans 3', sans-serif;
+    color: var(--paper);
+    padding: 48px 20px 80px;
+  }
+  .wrap{ max-width: 680px; margin: 0 auto; }
+
+  .masthead{ text-align:center; margin-bottom: 36px; }
+  .masthead .eyebrow{
+    font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 8px; font-weight: 600;
+  }
+  .masthead h1{
+    font-family: 'Lora', serif; font-weight: 600; font-style: italic;
+    font-size: 34px; margin: 0; color: var(--paper);
+  }
+  .masthead .today{
+    font-size: 13px; color: #B9AC98; margin-top: 8px; font-family:'Lora',serif; font-style: italic;
+  }
+
+  /* the notebook page for adding a new entry */
+  .page{
+    background: var(--paper);
+    border-radius: 3px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    padding: 26px 26px 22px 54px;
+    position: relative;
+    margin-bottom: 40px;
+  }
+  .page::before{
+    content:""; position:absolute; left: 34px; top:0; bottom:0; width: 1.5px;
+    background: var(--thread-soft); opacity: 0.55;
+  }
+  .page-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .page-row label{
+    font-family:'Lora',serif; font-style: italic; color: var(--ink-soft); font-size: 14px;
+  }
+  input[type="date"]{
+    font-family:'Source Sans 3',sans-serif; font-size: 14px; color: var(--ink);
+    background: transparent; border: none; border-bottom: 1px dashed var(--paper-line);
+    padding: 4px 2px; outline: none;
+  }
+  textarea{
+    width:100%; min-height: 96px; resize: vertical;
+    font-family:'Lora',serif; font-size: 16px; line-height: 1.9; color: var(--ink);
+    background: repeating-linear-gradient(var(--paper) 0px, var(--paper) 30px, var(--paper-line) 31px);
+    border: none; outline: none; padding: 4px 2px 0;
+  }
+  textarea::placeholder{ color: var(--ink-soft); opacity: 0.65; font-style: italic; }
+
+  .page-footer{ display:flex; justify-content:flex-end; margin-top: 14px; }
+  button.save{
+    font-family: 'Source Sans 3', sans-serif; font-weight: 600; font-size: 13px;
+    letter-spacing: 0.4px; color: var(--paper);
+    background: var(--thread); border: none; padding: 10px 20px;
+    border-radius: 3px; cursor: pointer; transition: background 0.15s ease;
+  }
+  button.save:hover{ background: #9C4444; }
+  button.save:disabled{ opacity: 0.5; cursor: default; }
+
+  .eyebrow-2{
+    font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: #A99C87; margin: 0 0 16px 4px; font-weight: 600;
+  }
+
+  .entry{
+    background: var(--paper);
+    border-radius: 3px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+    padding: 20px 22px 18px 46px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .entry::before{
+    content:""; position:absolute; left: 28px; top:0; bottom:0; width: 1.5px;
+    background: var(--thread-soft); opacity: 0.5;
+  }
+  .entry .head{
+    display:flex; justify-content: space-between; align-items:baseline; margin-bottom: 8px;
+  }
+  .entry .date{
+    font-family:'Lora',serif; font-style: italic; font-weight: 600; color: var(--thread);
+    font-size: 15px;
+  }
+  .entry .del{
+    background:none; border:none; color: var(--ink-soft); font-size: 12px; cursor:pointer;
+    text-decoration: underline; text-underline-offset: 2px; padding: 2px 4px;
+  }
+  .entry .del:hover{ color: var(--thread); }
+  .entry .content{
+    font-family:'Lora',serif; font-size: 16px; line-height: 1.85; color: var(--ink);
+    white-space: pre-wrap; margin: 0;
+  }
+
+  .empty{
+    text-align:center; color: #A99C87; font-family:'Lora',serif; font-style: italic;
+    padding: 30px 0; font-size: 15px;
+  }
+  .loading{ text-align:center; color:#A99C87; font-size: 13px; padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow">Pagine private</div>
+    <h1>Diario Giornaliero</h1>
+    <div class="today" id="todayLabel"></div>
+  </div>
+
+  <div class="page">
+    <div class="page-row">
+      <label for="entryDate">Data della voce</label>
+      <input type="date" id="entryDate">
+    </div>
+    <textarea id="entryContent" placeholder="Cosa hai fatto oggi?"></textarea>
+    <div class="page-footer">
+      <button class="save" id="saveBtn">Scrivi nel diario</button>
+    </div>
+  </div>
+
+  <div class="eyebrow-2">Voci precedenti</div>
+  <div id="entriesList">
+    <div class="loading">Caricamento voci…</div>
+  </div>
+
+</div>
+
+<script>
+  const dateInput = document.getElementById('entryDate');
+  const contentInput = document.getElementById('entryContent');
+  const saveBtn = document.getElementById('saveBtn');
+  const list = document.getElementById('entriesList');
+  const todayLabel = document.getElementById('todayLabel');
+
+  const monthsIt = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const daysIt = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+
+  function toISO(d){ return d.toISOString().slice(0,10); }
+  function formatDate(iso){
+    const d = new Date(iso + 'T00:00:00');
+    return daysIt[d.getDay()] + ' ' + d.getDate() + ' ' + monthsIt[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  const today = new Date();
+  dateInput.value = toISO(today);
+  todayLabel.textContent = 'oggi è ' + formatDate(toISO(today));
+
+  async function loadEntries(){
+    list.innerHTML = '<div class="loading">Caricamento voci…</div>';
+    try{
+      const res = await fetch('/api/entries');
+      const data = await res.json();
+      renderEntries(data);
+    }catch(err){
+      list.innerHTML = '<div class="empty">Non riesco a caricare le voci. Riprova tra poco.</div>';
+    }
+  }
+
+  function renderEntries(data){
+    if(!data || data.length === 0){
+      list.innerHTML = '<div class="empty">Nessuna voce ancora. Scrivi la prima riga qui sopra.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.forEach(row => {
+      const div = document.createElement('div');
+      div.className = 'entry';
+      div.innerHTML =
+        '<div class="head"><span class="date">' + formatDate(row.entryDate) + '</span>' +
+        '<button class="del" data-id="' + row.id + '">elimina</button></div>' +
+        '<p class="content"></p>';
+      div.querySelector('.content').textContent = row.content;
+      list.appendChild(div);
+    });
+    list.querySelectorAll('.del').forEach(btn => {
+      btn.addEventListener('click', () => deleteEntry(btn.dataset.id));
+    });
+  }
+
+  async function deleteEntry(id){
+    try{
+      await fetch('/api/entries?id=' + id, { method: 'DELETE' });
+      loadEntries();
+    }catch(err){}
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    const entryDate = dateInput.value;
+    const content = contentInput.value.trim();
+    if(!entryDate || !content) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvataggio…';
+    try{
+      await fetch('/api/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryDate, content })
+      });
+      contentInput.value = '';
+      await loadEntries();
+    }catch(err){
+      alert('Non sono riuscito a salvare la voce. Riprova.');
+    }finally{
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Scrivi nel diario';
+    }
+  });
+
+  loadEntries();
+</script>
+</body>
+</html>
